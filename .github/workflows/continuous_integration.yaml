@@ -1,0 +1,69 @@
+name: Feature finished
+on:
+  push:
+    branches: [ 'feature/HU**' ]
+jobs:
+  merge-develop:
+    name: Merge develop -> feature/HU**
+    if: ${{ startsWith(github.event.head_commit.message, 'FINISHED') || 
+            startsWith(github.event.head_commit.message, 'RELEASE') }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout de repositorio
+      uses: actions/checkout@v3
+    - name: Configuración de entorno de python
+      uses: actions/setup-python@v2
+      with:
+          python-version: '3.10'
+    - name: Instalación de librerías y dependencias 
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Mezcla develop -> feature/HU**
+      uses: tukasz/direct-merge-action@master
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        source-branch: develop
+        target-branch: ${{ github.ref }}
+    
+  run-test:
+    name: Run tests y Merge feature/HU** -> develop 
+    needs: merge-develop
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout de repositorio
+      uses: actions/checkout@v3
+      with: 
+        ref: ${{ github.ref }}
+    - name: Configuración de entorno de python
+      uses: actions/setup-python@v2
+      with:
+          python-version: '3.10'
+    - name: Instalación de librerías y dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Correr pruebas
+      id: correr-pruebas
+      run: python -m unittest -v tests/test_carreras.py
+    - name: Validar resultado con errores
+      if: ${{ failure() }}
+      env:
+        MENSAJE_ERROR: Una o varias pruebas fallaron
+      run: echo "::set-output name=respuesta::${MENSAJE_ERROR}"
+    - name: Validar resultado sin errores
+      if: ${{ success() }}
+      env:
+        MENSAJE_EXITO: Todas las pruebas fueron exitosas
+      run: echo "::set-output name=respuesta::${MENSAJE_EXITO}"
+    - name: Mezcla feature/HU** -> develop
+      uses: tukasz/direct-merge-action@master
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        source-branch: ${{ github.ref }}
+        target-branch: develop
+
+  call-workflow:
+    needs: [merge-develop, run-test]
+    uses: ./.github/workflows/lanzar_release.yaml
+  

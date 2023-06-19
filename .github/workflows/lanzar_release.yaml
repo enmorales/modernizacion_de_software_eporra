@@ -1,0 +1,87 @@
+name: Lanzar release y merge main
+on: workflow_call
+jobs:
+  rama-release:
+    name: Generar release y Mezcla develop -> release
+    if: ${{ startsWith(github.event.head_commit.message, 'RELEASE') }}
+    runs-on: ubuntu-latest
+    steps:
+    - id: get-id 
+      run: |
+        id=$(echo ${{github.event.head_commit.message}} | cut -d ":" -s -f 1 | cut -d " " -s -f 2)
+        echo "::set-output name=id::$id"
+        echo "::set-output name=rama_release::release-$id"
+    - name: validación de número de release
+      if: ${{ !steps.get-id.outputs.id }}
+      run: | 
+        echo "release (${{steps.get-id.outputs.id}})"
+        exit 1
+    - name: Validar resultado con errores
+      if: ${{ failure() }}
+      env:
+        MENSAJE_ERROR: id no válido
+      run: echo "::set-output name=respuesta::${MENSAJE_ERROR}"
+    - name: Id valido
+      if: ${{ success() }}
+      run: echo "ok" 
+    - name: Checkout de repositorio
+      uses: actions/checkout@v3
+      with:
+        ref: develop
+    - name: Instalación de librerías y dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Crear rama
+      run: |
+        git checkout -b ${{ steps.get-id.outputs.rama_release }}
+        git push -f -u origin ${{ steps.get-id.outputs.rama_release }}
+    - name: Mezcla develop -> release
+      uses: tukasz/direct-merge-action@master
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        source-branch: develop
+        target-branch: ${{ steps.get-id.outputs.rama_release }}
+
+  run-test:
+    name: Run tests y Mezcla release -> main
+    needs: rama-release
+    runs-on: ubuntu-latest
+    steps:
+    - id: get-id 
+      run: |
+        id=$(echo ${{github.event.head_commit.message}} | cut -d ":" -s -f 1 | cut -d " " -s -f 2)
+        echo "::set-output name=id::$id"
+        echo "::set-output name=rama_release::release-$id"
+    - name: Checkout de repositorio
+      uses: actions/checkout@v3
+      with: 
+        ref: ${{ steps.get-id.outputs.rama_release }}
+    - name: Configuración de entorno de python
+      uses: actions/setup-python@v2
+      with:
+          python-version: '3.10'
+    - name: Instalación de librerías y dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Correr pruebas
+      id: correr-pruebas
+      run: python -m unittest -v tests/test_carreras.py
+    - name: Validar resultado con errores 
+      if: ${{ failure() }}
+      env:
+        MENSAJE_ERROR: Una o varias pruebas fallaron
+      run: echo "::set-output name=respuesta::${MENSAJE_ERROR}"
+    - name: Validar resultado sin errores
+      if: ${{ success() }}
+      env:
+        MENSAJE_EXITO: Todas las pruebas fueron exitosas
+      run: echo "::set-output name=respuesta::${MENSAJE_EXITO}"
+    - name: Mezcla release -> main
+      uses: tukasz/direct-merge-action@master
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        source-branch: ${{ steps.get-id.outputs.rama_release }}
+        target-branch: main
+      
