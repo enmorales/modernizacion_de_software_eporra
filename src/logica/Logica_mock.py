@@ -19,10 +19,8 @@ class Logica_mock():
     def dar_carrera(self, id_carrera):
         return self.carreras[id_carrera].copy()
     
-    def crear_carrera(self, nombre,competidores):
-        competidores_map = []
-        for item in competidores:
-            competidores_map.append({'nombre':item['Nombre'],'probabilidad':item['Probabilidad']})
+    def crear_carrera(self, nombre, competidores):
+        competidores_map = [{'nombre': comp['Nombre'], 'probabilidad': comp['Probabilidad']} for comp in competidores]
         carrera_guardada = self.logica_carreras.crear_carrera(nombre, competidores_map)
         return carrera_guardada
 
