@@ -1,0 +1,14 @@
+runtime: python
+service: apitest
+env: flex
+runtime_config:
+    operating_system: "ubuntu18"
+    runtime_version: "3.9"
+
+entrypoint: gunicorn -b :$PORT main:app
+env_variables:
+    DATABASE_URL: "postgresql://eporra:eporra@35.232.130.12:5432/postgres"
+    FLASK_DEBUG: "1"
+
+automatic_scaling:
+    max_num_instances: 1

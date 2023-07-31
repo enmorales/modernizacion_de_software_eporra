@@ -1,3 +1,4 @@
+import requests
 from src.logica.controlador_carreras import ControladorCarreras
 from src.logica.controlador_apuestas import ControladorApuestas
 from src.logica.controlador_apostadores import ControladorApostadores
@@ -9,6 +10,7 @@ class Logica_mock():
         self.controlador_apuestas = ControladorApuestas()
         self.controlador_apostadores = ControladorApostadores()
         self.carreras = []
+        self.url_service = "http://127.0.0.1:5000/api"
         
     def dar_carreras(self):
         self.carreras = []
@@ -39,21 +41,23 @@ class Logica_mock():
         return carrera_eliminada
 
     def dar_apostadores(self):
-        self.apostadores = []
-        for apostador in self.controlador_apostadores.dar_apostadores(): 
-            self.apostadores.append({'id':apostador['id'], 'Nombre':apostador['nombre']})
-
-        return self.apostadores.copy()
+        response = requests.get(self.url_service+"/apostadores")
+        response_json = response.json()
+        return response_json
 
     def aniadir_apostador(self, nombre):
-        return self.controlador_apostadores.crear_apostador(nombre=nombre)
+        payload = {"nombre": nombre}
+        response = requests.post(self.url_service+"/apostadores", json=payload)
+        return response.json()
     
     def editar_apostador(self, id, nombre):
-        apostador_id = self.apostadores[id]['id']
-        return self.controlador_apostadores.editar_apostador(id=apostador_id, nombre=nombre)
+        payload = {"nombre": nombre}
+        response = requests.post(self.url_service+"/apostador/"+str(id), json=payload)
+        return response.json()
     
     def eliminar_apostador(self, id):
-        del self.apostadores[id]
+        response = requests.delete(self.url_service+"/apostador/"+str(id), json={})
+        return response.json()
 
     def dar_competidores_carrera(self, id):
         return self.carreras[id]['Competidores'].copy()
