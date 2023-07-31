@@ -21,3 +21,7 @@ class ApostadorDAO:
     def get_all_apostadores(self):
         apostadores = session.query(Apostador).order_by(Apostador.nombre).all()
         return [{'id': apostador.id, 'nombre': apostador.nombre} for apostador in apostadores]
+    
+    def delete_apostador(self, apostador):
+        session.delete(apostador)
+        session.commit()

@@ -103,6 +103,7 @@ class Vista_lista_apostadores(QWidget):
         Esta función muestra la lista de apostadores
         """
         self.apostadores = apostadores
+        print(str(self.apostadores))
         
         #Este pedazo de código borra todos los contenidos anteriores de la tabla (salvo los encabezados)
         while self.distribuidor_tabla_apostadores.count()>2:
@@ -123,7 +124,7 @@ class Vista_lista_apostadores(QWidget):
             boton_editar.setToolTip("Editar")
             boton_editar.setFixedSize(30,30)
             boton_editar.setIcon(QIcon("src/recursos/004-edit-button.png"))
-            boton_editar.clicked.connect(partial(self.mostrar_dialogo_editar_apostador, numero_fila) )
+            boton_editar.clicked.connect(partial(self.mostrar_dialogo_editar_apostador, apostador["id"]) )
             self.distribuidor_tabla_apostadores.addWidget(boton_editar, numero_fila+1,1,Qt.AlignTop)
 
 
@@ -131,7 +132,7 @@ class Vista_lista_apostadores(QWidget):
             etiqueta_eliminar.setToolTip("Borrar")
             etiqueta_eliminar.setFixedSize(30,30)
             etiqueta_eliminar.setIcon(QIcon("src/recursos/005-delete.png"))
-            etiqueta_eliminar.clicked.connect(partial(self.eliminar_apostador, numero_fila) )
+            etiqueta_eliminar.clicked.connect(partial(self.eliminar_apostador, apostador["id"]) )
             self.distribuidor_tabla_apostadores.addWidget(etiqueta_eliminar, numero_fila+1,2,Qt.AlignTop)
 
 
@@ -143,11 +144,18 @@ class Vista_lista_apostadores(QWidget):
     def mostrar_dialogo_editar_apostador(self, id_apostador):
         """
         Esta función ejecuta el diálogo para editar un apostador
-        """    
-        dialogo=Dialogo_crear_apostador(self.apostadores[id_apostador])        
+        """  
+        prestador = self.buscar_prestador(id_apostador)  
+        dialogo=Dialogo_crear_apostador(prestador)        
         dialogo.exec_()
         if dialogo.resultado==1:            
             self.interfaz.editar_apostador(id_apostador, dialogo.texto_nombre.text())
+    
+    def buscar_prestador(self, id_prestador):
+        for prestador in self.apostadores:  # for name, age in dictionary.iteritems():  (for Python 2.x)
+            if prestador["id"] == id_prestador:
+                return prestador
+       
 
     def eliminar_apostador(self, indice_apostador):
         """
